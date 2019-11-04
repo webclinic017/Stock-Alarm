@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/alarm.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() => runApp(MyApp());
 
@@ -19,6 +20,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  var init = true;
   String chosenSymbol;
   var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
   List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
@@ -27,18 +29,43 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     // TODO: implement initState
-
-    final databaseReference = Firestore.instance;
-    databaseReference
-        .collection("Users")
-        .getDocuments()
-        .then((QuerySnapshot snapshot) {
-      snapshot.documents.forEach((f) {
-        user = f;
-      });
+    final _firebaseMessaging = FirebaseMessaging();
+    _firebaseMessaging.getToken().then((value) {
+      print(value);
     });
 
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    // TODO: implement didChangeDependencies
+    if (init) {
+      final _firebaseMessaging = FirebaseMessaging();
+      _firebaseMessaging.configure(
+        // ignore: missing_return
+        onMessage: (Map<String, dynamic> message) {
+          print('on message ${message}');
+          showDialog(
+              context: context,
+              builder: (BuildContext ctx) {
+                return AlertDialog(
+                  title: Text("ALARM"),
+                );
+              });
+        },
+        // ignore: missing_return
+        onResume: (Map<String, dynamic> message) {
+          print('on resume $message');
+        },
+        // ignore: missing_return
+        onLaunch: (Map<String, dynamic> message) {
+          print('on launch $message');
+        },
+      );
+      init = false;
+    }
+    super.didChangeDependencies();
   }
 
   @override
