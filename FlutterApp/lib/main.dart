@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models/alarm.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,6 +22,24 @@ class _MyHomePageState extends State<MyHomePage> {
   String chosenSymbol;
   var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
   List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
+  var user;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+
+    final databaseReference = Firestore.instance;
+    databaseReference
+        .collection("Users")
+        .getDocuments()
+        .then((QuerySnapshot snapshot) {
+      snapshot.documents.forEach((f) {
+        user = f;
+      });
+    });
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
