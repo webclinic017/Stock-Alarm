@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models/alarm.dart';
-//import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() => runApp(MyApp());
@@ -28,10 +28,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     final _firebaseMessaging = FirebaseMessaging();
     _firebaseMessaging.getToken().then((value) {
       print(value);
+    });
+
+    Firestore.instance.collection("Alarms").getDocuments().then((value) {
+      value.documents.forEach((document) {
+        print(document.data);
+      });
     });
 
     super.initState();
@@ -39,7 +44,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
     if (init) {
       final _firebaseMessaging = FirebaseMessaging();
       _firebaseMessaging.configure(
