@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'models/alarm.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,12 +22,23 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var init = true;
-  String chosenSymbol;
-  //var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
+  var chosenSymbol =
+      "GOOGL"; // <= for Dropdown Menu initialization value, has to be a valid value
+  final myController = TextEditingController();
+
+  //dummy data
+  var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
   //List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
   List<Alarm> alarms = [];
-  List<String> pairs = [];
-  var user;
+  //List<String> pairs = ["AAPL"];
+
+  var userId;
+
+  @override
+  void dispose() {
+    myController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -35,19 +47,16 @@ class _MyHomePageState extends State<MyHomePage> {
       print(value);
     }); */
 
-    Firestore.instance.collection("Alarms").getDocuments().then((value) {
-      value.documents.forEach((document) {
-        var symbol = document.documentID;
-        print(symbol);
-        document.data.forEach((key, value) {
-          String alarmId = key;
-          String owner = value["Owner"];
-          var level = value["Level"];
-          setState(() {
-            alarms.add(Alarm(symbol, level));
-          });
-        });
-      });
+    FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: "lol@fefe.de", password: "1234567");
+
+    FirebaseAuth.instance.currentUser().then((user) {
+      userId = user.uid;
+    });
+
+    FirebaseDatabase.instance.reference().child("Alarms").once().then((snap) {
+      print(snap.value);
+      print(snap.key);
     });
 
     super.initState();
@@ -56,21 +65,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void addAlarm(symbol, level) {
     var alarm = Alarm(symbol, level);
 
-    Firestore.instance.collection("Alarms").document(symbol).setData({
-      alarm.id: alarm.toJson(),
-    });
+    FirebaseDatabase.instance
+        .reference()
+        .child('Alarms')
+        .child(alarm.id)
+        .set(alarm.toJson());
 
-    var userId = "notimplemented"; //TODO firebaseauth
-    Firestore.instance.collection("Users").document(userId).setData({
-      alarm.id: alarm.toJson(),
-    });
-
-/*
-    Firestore.instance
-        .collection('Alarms')
-        .document("AUDUSD")
-        .delete()
-        .then((lol) {}); */
+    FirebaseDatabase.instance
+        .reference()
+        .child("Users")
+        .child(userId)
+        .child("Alarms")
+        .child(alarm.id)
+        .set(alarm.toJson());
   }
 
   @override
@@ -144,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         value: chosenSymbol,
                         items: pairs.map((String value) {
-                          return new DropdownMenuItem<String>(
+                          return DropdownMenuItem<String>(
                             value: value,
                             child: new Text(value),
                           );
@@ -168,7 +175,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         filled: true,
                         hintText: 'Enter text',
                         labelText: 'Alarm Price'),
-                    controller: new TextEditingController(),
+                    controller: myController,
                   ),
                 ),
               ],
@@ -181,7 +188,8 @@ class _MyHomePageState extends State<MyHomePage> {
             height: deviceHeight * 0.08,
             child: FlatButton(
               onPressed: () {
-                addAlarm("AUDUSD", 104.3);
+                double level = double.parse(myController.text);
+                addAlarm(chosenSymbol, level);
               },
               child: Text("Add Alarm"),
               color: Theme.of(context).primaryColor,

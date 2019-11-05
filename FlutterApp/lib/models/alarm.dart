@@ -1,12 +1,19 @@
+import 'package:uuid/uuid.dart';
+
 class Alarm {
   String symbol;
   double level;
-  String id = DateTime.now().toString();
+  var uuid = new Uuid();
+  String id;
 
-  Alarm(this.symbol, this.level);
+  Alarm(symbol, level) {
+    this.symbol = symbol;
+    this.level = level;
+    this.id = uuid.v1();
+  }
 
   Alarm.fromMap(Map snapshot, String id)
-      : id = id ?? '',
+      : this.id = id ?? '',
         symbol = snapshot['symbol'] ?? '',
         level = snapshot['name'] ?? '';
 
