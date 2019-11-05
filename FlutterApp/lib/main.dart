@@ -22,24 +22,55 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var init = true;
   String chosenSymbol;
-  var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
-  List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
+  //var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
+  //List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
+  List<Alarm> alarms = [];
+  List<String> pairs = [];
   var user;
 
   @override
   void initState() {
-    final _firebaseMessaging = FirebaseMessaging();
+    /*  final _firebaseMessaging = FirebaseMessaging();
     _firebaseMessaging.getToken().then((value) {
       print(value);
-    });
+    }); */
 
     Firestore.instance.collection("Alarms").getDocuments().then((value) {
       value.documents.forEach((document) {
-        print(document.data);
+        var symbol = document.documentID;
+        print(symbol);
+        document.data.forEach((key, value) {
+          String alarmId = key;
+          String owner = value["Owner"];
+          var level = value["Level"];
+          setState(() {
+            alarms.add(Alarm(symbol, level));
+          });
+        });
       });
     });
 
     super.initState();
+  }
+
+  void addAlarm(symbol, level) {
+    var alarm = Alarm(symbol, level);
+
+    Firestore.instance.collection("Alarms").document(symbol).setData({
+      alarm.id: alarm.toJson(),
+    });
+
+    var userId = "notimplemented"; //TODO firebaseauth
+    Firestore.instance.collection("Users").document(userId).setData({
+      alarm.id: alarm.toJson(),
+    });
+
+/*
+    Firestore.instance
+        .collection('Alarms')
+        .document("AUDUSD")
+        .delete()
+        .then((lol) {}); */
   }
 
   @override
@@ -149,7 +180,9 @@ class _MyHomePageState extends State<MyHomePage> {
           Container(
             height: deviceHeight * 0.08,
             child: FlatButton(
-              onPressed: () {},
+              onPressed: () {
+                addAlarm("AUDUSD", 104.3);
+              },
               child: Text("Add Alarm"),
               color: Theme.of(context).primaryColor,
             ),
