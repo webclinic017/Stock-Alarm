@@ -12,10 +12,14 @@ class Alarm {
     this.id = uuid.v1();
   }
 
-  Alarm.fromMap(Map snapshot, String id)
-      : this.id = id ?? '',
+  Alarm.fromMap(Map snapshot)
+      : this.id = Uuid().v1() ?? '',
         symbol = snapshot['symbol'] ?? '',
-        level = snapshot['name'] ?? '';
+        level = snapshot['level'] ?? '';
+
+  String toString() {
+    return "Alarm of Symbol $symbol at Level ${level.toString()}";
+  }
 
   toJson() {
     return {
