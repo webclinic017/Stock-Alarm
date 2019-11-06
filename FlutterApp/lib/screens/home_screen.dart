@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../models/alarm.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:provider/provider.dart';
 import 'package:trading_alarm/providers/alarms.dart';
+import 'package:trading_alarm/widgets/symbol_picker.dart';
+import 'package:trading_alarm/widgets/alarm_list.dart';
+import 'package:trading_alarm/widgets/price_picker.dart';
+import 'package:trading_alarm/widgets/add_alarm_button.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = "/home";
@@ -14,22 +16,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  var chosenSymbol;
   var init = true;
-  var chosenSymbol =
-      "GOOGL"; // <= for Dropdown Menu initialization value, has to be a valid value
-  final myController = TextEditingController();
+  final priceController = TextEditingController();
+  var userId; //evtl user oder userid als provider, im falle von user screen oder so
+  final _firebaseMessaging = FirebaseMessaging();
 
-  //dummy data
-  var pairs = <String>['AAPL', 'GOOGL', 'IBM'];
-  //List<Alarm> alarms = [Alarm("AAPL", 250.43), Alarm("GOOGL", 500.03)];
-  //List<Alarm> alarms = [];
-  //List<String> pairs = ["AAPL"];
-
-  var userId;
+  callback(newSymbol) {
+    chosenSymbol = newSymbol;
+  }
 
   @override
   void dispose() {
-    myController.dispose();
+    priceController.dispose();
     super.dispose();
   }
 
@@ -38,35 +37,37 @@ class _HomeScreenState extends State<HomeScreen> {
     FirebaseAuth.instance.currentUser().then((user) {
       userId = user.uid;
     });
-
     super.initState();
+  }
+
+  void setupPushNotifications() {
+    _firebaseMessaging.configure(
+      // ignore: missing_return
+      onMessage: (Map<String, dynamic> message) {
+        print('on message $message');
+        showDialog(
+            context: context,
+            builder: (BuildContext ctx) {
+              return AlertDialog(
+                title: Text("ALARM"),
+              );
+            });
+      },
+      // ignore: missing_return
+      onResume: (Map<String, dynamic> message) {
+        print('on resume $message');
+      },
+      // ignore: missing_return
+      onLaunch: (Map<String, dynamic> message) {
+        print('on launch $message');
+      },
+    );
   }
 
   @override
   void didChangeDependencies() {
     if (init) {
-      final _firebaseMessaging = FirebaseMessaging();
-      _firebaseMessaging.configure(
-        // ignore: missing_return
-        onMessage: (Map<String, dynamic> message) {
-          print('on message ${message}');
-          showDialog(
-              context: context,
-              builder: (BuildContext ctx) {
-                return AlertDialog(
-                  title: Text("ALARM"),
-                );
-              });
-        },
-        // ignore: missing_return
-        onResume: (Map<String, dynamic> message) {
-          print('on resume $message');
-        },
-        // ignore: missing_return
-        onLaunch: (Map<String, dynamic> message) {
-          print('on launch $message');
-        },
-      );
+      setupPushNotifications();
       init = false;
     }
     super.didChangeDependencies();
@@ -102,47 +103,11 @@ class _HomeScreenState extends State<HomeScreen> {
             height: deviceHeight * 0.15,
             child: Row(
               children: <Widget>[
-                Expanded(
-                  child: LayoutBuilder(
-                    builder:
-                        (BuildContext context, BoxConstraints constraints) {
-                      return DropdownButton(
-                        hint: Container(
-                          width: constraints.maxWidth - 24,
-                          child: FittedBox(
-                            child: Text("Choose a Stocksymbol"),
-                            fit: BoxFit.fill,
-                          ),
-                        ),
-                        value: chosenSymbol,
-                        items: pairs.map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: new Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (newValue) {
-                          setState(() {
-                            chosenSymbol = newValue;
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
+                SymbolPicker(callback),
                 SizedBox(
                   width: 16.0,
                 ),
-                Flexible(
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                        filled: true,
-                        hintText: 'Enter text',
-                        labelText: 'Alarm Price'),
-                    controller: myController,
-                  ),
-                ),
+                PricePicker(priceController),
               ],
             ),
           ),
@@ -151,32 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Container(
             height: deviceHeight * 0.08,
-            child: FlatButton(
-              onPressed: () {
-                double level = double.parse(myController.text);
-                alarms.addAlarm(chosenSymbol, level);
-              },
-              child: Text("Add Alarm"),
-              color: Theme.of(context).primaryColor,
-            ),
+            child: AddAlarmButton(priceController, () {
+              alarms.addAlarm(chosenSymbol, double.parse(priceController.text));
+            }),
           ),
           SizedBox(
             height: 16.0,
           ),
           Container(
             height: deviceHeight * 0.77,
-            child: ListView.builder(
-              itemCount: alarms.items.length,
-              itemBuilder: (ctx, index) {
-                return ListTile(
-                  trailing: Text(
-                    alarms.items[index].symbol,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  title: Text(alarms.items[index].level.toString() + "\$"),
-                );
-              },
-            ),
+            child: AlarmList(),
           )
           //Alternate
         ],

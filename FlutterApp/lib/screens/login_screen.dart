@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:trading_alarm/providers/alarms.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 class LoginScreen extends StatefulWidget {
   @override

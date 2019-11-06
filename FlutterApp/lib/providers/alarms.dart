@@ -25,9 +25,11 @@ class Alarms with ChangeNotifier {
         var alarm = Alarm.fromMap(a.current);
         print(alarm);
         _items.add(alarm);
+        notifyListeners();
       }
     });
-    notifyListeners(); // <- put this into then so that the ui is updating after loading finished
+
+    // <- put this into then so that the ui is updating after loading finished
     //or for the case of a lot of alarms: keep notify listeners in the loop so that the list of alarms build slowly
     //=> requires that the list is in consumer and not whole ui updating
   }
@@ -47,7 +49,7 @@ class Alarms with ChangeNotifier {
         .reference()
         .child('Alarms')
         .child(alarm.id)
-        .set(alarm.toJson());
+        .set(alarm.toJson()); //auch .then
 
     FirebaseDatabase.instance
         .reference()
@@ -55,10 +57,10 @@ class Alarms with ChangeNotifier {
         .child(userId)
         .child("Alarms")
         .child(alarm.id)
-        .set(alarm
-            .toJson()); //nur items.add und notify ausführen wenn .then von firebase successfull
-
-    _items.add(alarm);
-    notifyListeners();
+        .set(alarm.toJson())
+        .then((_) {
+      _items.add(alarm);
+      notifyListeners();
+    }); //nur items.add und notify ausführen wenn .then von firebase successfull
   }
 }
