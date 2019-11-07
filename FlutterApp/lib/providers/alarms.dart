@@ -48,8 +48,16 @@ class Alarms with ChangeNotifier {
     FirebaseDatabase.instance
         .reference()
         .child('Alarms')
+        .child(alarm.symbol)
         .child(alarm.id)
         .set(alarm.toJson()); //auch .then
+
+    FirebaseDatabase.instance
+        .reference()
+        .child('Alarms')
+        .child(alarm.symbol)
+        .child(alarm.id)
+        .set({"owner": userId});
 
     FirebaseDatabase.instance
         .reference()
