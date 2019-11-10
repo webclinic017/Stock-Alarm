@@ -7,7 +7,13 @@ class Alarms with ChangeNotifier {
   List<Alarm> _items = [];
   FirebaseUser user;
 
+  void resetUser() {
+    user = null;
+    _items = [];
+  }
+
   void connectToFirebase() async {
+    _items = [];
     user = await FirebaseAuth.instance.currentUser();
 
     FirebaseDatabase.instance
@@ -39,33 +45,33 @@ class Alarms with ChangeNotifier {
     return _items.firstWhere((alarm) => alarm.id == id);
   }
 
-  void addAlarm(symbol, level) {
+  void addAlarm(symbol, level) async {
     var alarm = Alarm(symbol, level);
 
-    FirebaseDatabase.instance
+    var ref = FirebaseDatabase.instance
         .reference()
         .child('Alarms')
         .child(alarm.symbol)
-        .child(alarm.id)
-        .set(alarm.toJson()); //auch .then
+        .push();
+    var id = ref.key;
+    alarm.setId(id);
+    var future1 = ref.set(alarm.toJson()); //auch .then
 
-    FirebaseDatabase.instance
-        .reference()
-        .child('Alarms')
-        .child(alarm.symbol)
-        .child(alarm.id)
-        .set({"owner": user.uid});
+    var future2 = ref.update({"owner": user.uid});
 
-    FirebaseDatabase.instance
+    var future3 = FirebaseDatabase.instance
         .reference()
         .child("Users")
         .child(user.uid)
         .child("Alarms")
         .child(alarm.id)
-        .set(alarm.toJson())
-        .then((_) {
-      _items.add(alarm);
+        .set(alarm.toJson());
+    Future.wait([future1, future2, future3]).then((_) {
+      //wait for all database operation to finish successfully
+      _items.add(alarm); //and update ui after success
       notifyListeners();
-    }); //nur items.add und notify ausführen wenn .then von firebase successfull => await 3 promises
+    }).catchError((error) {
+      print("Add Alarm Error" + error);
+    }); //TODO show error popup to user
   }
 }

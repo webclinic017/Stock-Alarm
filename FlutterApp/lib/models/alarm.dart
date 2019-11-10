@@ -3,13 +3,15 @@ import 'package:uuid/uuid.dart';
 class Alarm {
   String symbol;
   double level;
-  var uuid = new Uuid();
   String id;
 
   Alarm(symbol, level) {
     this.symbol = symbol;
     this.level = level;
-    this.id = uuid.v1();
+  }
+
+  void setId(String id) {
+    this.id = id;
   }
 
   Alarm.fromMap(Map snapshot)

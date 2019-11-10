@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   alarms
                       .connectToFirebase(); // <- turn this into a future and put navigator .push in then teil
 
-                  Navigator.pushNamed(context, HomeScreen.routeName);
+                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((_) {
                   setState(() {
                     loginText = "User does not exist";
@@ -93,8 +93,10 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 register().then((_) {
                   writeUserToDatabase();
+                  alarms
+                      .connectToFirebase(); //<- to get the user ready in alarms.dart
 
-                  Navigator.pushNamed(context, HomeScreen.routeName);
+                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((error) {
                   setState(() {
                     loginText = "Registering failed";

@@ -86,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.exit_to_app),
             onPressed: () {
               FirebaseAuth.instance.signOut();
+              alarms.resetUser();
               Navigator.pushNamed(context, LoginScreen.routeName);
             })
       ],
