@@ -7,6 +7,7 @@ import 'package:trading_alarm/widgets/symbol_picker.dart';
 import 'package:trading_alarm/widgets/alarm_list.dart';
 import 'package:trading_alarm/widgets/price_picker.dart';
 import 'package:trading_alarm/widgets/add_alarm_button.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = "/home";
@@ -80,6 +81,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final appBar = AppBar(
       title: Text('Stock Alarm'),
+      actions: <Widget>[
+        IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushNamed(context, LoginScreen.routeName);
+            })
+      ],
     );
     final deviceHeight = MediaQuery.of(context).size.height -
         appBar.preferredSize.height -

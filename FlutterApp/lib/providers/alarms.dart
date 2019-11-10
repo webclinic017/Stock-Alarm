@@ -5,24 +5,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class Alarms with ChangeNotifier {
   List<Alarm> _items = [];
-  String userId;
+  FirebaseUser user;
 
-  void connectToFirebase() {
-    FirebaseAuth.instance.currentUser().then((user) {
-      userId = user.uid;
-    });
+  void connectToFirebase() async {
+    user = await FirebaseAuth.instance.currentUser();
 
-    //TODO load from database into alarms provider
     FirebaseDatabase.instance
         .reference()
         .child("Users")
-        .child(userId)
+        .child(user.uid)
         .child("Alarms")
         .once()
         .then((snap) {
-      var a = snap.value.values.iterator;
-      while (a.moveNext()) {
-        var alarm = Alarm.fromMap(a.current);
+      var it = snap.value.values.iterator;
+      while (it.moveNext()) {
+        var alarm = Alarm.fromMap(it.current);
         print(alarm);
         _items.add(alarm);
         notifyListeners();
@@ -57,18 +54,18 @@ class Alarms with ChangeNotifier {
         .child('Alarms')
         .child(alarm.symbol)
         .child(alarm.id)
-        .set({"owner": userId});
+        .set({"owner": user.uid});
 
     FirebaseDatabase.instance
         .reference()
         .child("Users")
-        .child(userId)
+        .child(user.uid)
         .child("Alarms")
         .child(alarm.id)
         .set(alarm.toJson())
         .then((_) {
       _items.add(alarm);
       notifyListeners();
-    }); //nur items.add und notify ausführen wenn .then von firebase successfull
+    }); //nur items.add und notify ausführen wenn .then von firebase successfull => await 3 promises
   }
 }
