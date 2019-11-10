@@ -7,13 +7,10 @@ class PricePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
-      child: TextField(
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-            filled: true, hintText: 'Enter text', labelText: 'Alarm Price'),
-        controller: priceController,
-      ),
+    return TextField(
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(filled: true, labelText: 'Price'),
+      controller: priceController,
     );
   }
 }

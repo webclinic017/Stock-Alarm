@@ -8,6 +8,7 @@ import 'package:trading_alarm/widgets/alarm_list.dart';
 import 'package:trading_alarm/widgets/price_picker.dart';
 import 'package:trading_alarm/widgets/add_alarm_button.dart';
 import 'login_screen.dart';
+import '../widgets/new_alarm.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = "/home";
@@ -74,10 +75,22 @@ class _HomeScreenState extends State<HomeScreen> {
     super.didChangeDependencies();
   }
 
+  void _startAddNewAlarm(BuildContext ctx) {
+    showModalBottomSheet(
+      context: ctx,
+      builder: (_) {
+        return GestureDetector(
+          onTap: () {},
+          child: NewAlarm(),
+          behavior: HitTestBehavior.opaque,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final alarms =
-        Provider.of<Alarms>(context); // TODO bau consumer around list builder
+    final alarms = Provider.of<Alarms>(context, listen: false);
 
     final appBar = AppBar(
       title: Text('Stock Alarm'),
@@ -86,21 +99,17 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.exit_to_app),
             onPressed: () {
               FirebaseAuth.instance.signOut();
-              alarms.resetUser();
+              alarms
+                  .resetUser(); //try to solve this otherwise to not have the provider of alarms in this class, maybe with a provider for the user
               Navigator.pushNamed(context, LoginScreen.routeName);
             })
       ],
     );
+
     final deviceHeight = MediaQuery.of(context).size.height -
         appBar.preferredSize.height -
         (2 * 16) -
         MediaQuery.of(context).padding.top;
-
-    print(deviceHeight);
-    print(MediaQuery.of(context).size.height);
-    print(appBar.preferredSize.height);
-    print(MediaQuery.of(context).padding.top);
-    //console.log(deviceHeight);
 
     return Scaffold(
       appBar: appBar,
@@ -108,37 +117,16 @@ class _HomeScreenState extends State<HomeScreen> {
         children: <Widget>[
           //Material example
           Container(
-            //margin: EdgeInsets.all(15),
-            padding: EdgeInsets.all(10),
-            height: deviceHeight * 0.15,
-            child: Row(
-              children: <Widget>[
-                SymbolPicker(callback),
-                SizedBox(
-                  width: 16.0,
-                ),
-                PricePicker(priceController),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 16.0,
-          ),
-          Container(
-            height: deviceHeight * 0.08,
-            child: AddAlarmButton(priceController, () {
-              alarms.addAlarm(chosenSymbol, double.parse(priceController.text));
-            }),
-          ),
-          SizedBox(
-            height: 16.0,
-          ),
-          Container(
-            height: deviceHeight * 0.77,
+            height: deviceHeight,
+            width: double.infinity,
             child: AlarmList(),
           )
-          //Alternate
         ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () => _startAddNewAlarm(context),
       ),
     );
   }

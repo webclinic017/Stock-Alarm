@@ -62,6 +62,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final alarms = Provider.of<Alarms>(context, listen: false);
 
@@ -114,12 +119,14 @@ class _LoginScreenState extends State<LoginScreen> {
               children: <Widget>[
                 TextFormField(
                   decoration: InputDecoration(labelText: "email"),
+                  initialValue: "dud@dud.de",
                   onSaved: (value) {
                     email = value;
                   },
                 ),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Password"),
+                  initialValue: "duddud",
                   onSaved: (value) {
                     password = value;
                   },
