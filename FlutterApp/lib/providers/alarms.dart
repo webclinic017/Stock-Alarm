@@ -45,6 +45,25 @@ class Alarms with ChangeNotifier {
     return _items.firstWhere((alarm) => alarm.id == id);
   }
 
+  void removeAlarm(Alarm alarm) {
+    FirebaseDatabase.instance
+        .reference()
+        .child('Alarms')
+        .child(alarm.symbol)
+        .child(alarm.id)
+        .remove();
+    FirebaseDatabase.instance
+        .reference()
+        .child('Users')
+        .child(user.uid)
+        .child("Alarms")
+        .child(alarm.id)
+        .remove();
+
+    _items.removeWhere((element) => element.id == alarm.id);
+    notifyListeners();
+  }
+
   void addAlarm(symbol, level) async {
     var alarm = Alarm(symbol, level);
 
@@ -53,20 +72,21 @@ class Alarms with ChangeNotifier {
         .child('Alarms')
         .child(alarm.symbol)
         .push();
+
+    await ref.set({"owner": user.uid});
+
     var id = ref.key;
     alarm.setId(id);
-    var future1 = ref.set(alarm.toJson()); //auch .then
+    var future1 = ref.update(alarm.toJson()); //auch .then
 
-    var future2 = ref.update({"owner": user.uid});
-
-    var future3 = FirebaseDatabase.instance
+    var future2 = FirebaseDatabase.instance
         .reference()
         .child("Users")
         .child(user.uid)
         .child("Alarms")
         .child(alarm.id)
         .set(alarm.toJson());
-    Future.wait([future1, future2, future3]).then((_) {
+    Future.wait([future1, future2]).then((_) {
       //wait for all database operation to finish successfully
       _items.add(alarm); //and update ui after success
       notifyListeners();

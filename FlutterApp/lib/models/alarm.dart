@@ -15,7 +15,7 @@ class Alarm {
   }
 
   Alarm.fromMap(Map snapshot)
-      : this.id = Uuid().v1() ?? '',
+      : id = snapshot['id'] ?? '',
         symbol = snapshot['symbol'] ?? '',
         level = snapshot['level'].toDouble() ?? '';
 

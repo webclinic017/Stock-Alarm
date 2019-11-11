@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: <Widget>[
                 TextFormField(
                   decoration: InputDecoration(labelText: "email"),
-                  initialValue: "dud@dud.de",
+                  initialValue: "dud2@dud.de",
                   onSaved: (value) {
                     email = value;
                   },

@@ -113,15 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: appBar,
-      body: Column(
-        children: <Widget>[
-          //Material example
-          Container(
-            height: deviceHeight,
-            width: double.infinity,
-            child: AlarmList(),
-          )
-        ],
+      body: Container(
+        height: deviceHeight,
+        width: double.infinity,
+        child: AlarmList(),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton(

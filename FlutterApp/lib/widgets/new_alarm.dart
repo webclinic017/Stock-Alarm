@@ -11,7 +11,7 @@ class NewAlarm extends StatefulWidget {
 
 class _NewAlarmState extends State<NewAlarm> {
   final amountController = TextEditingController();
-  var chosenSymbol;
+  var chosenSymbol = 'AAPL';
 
   callback(newSymbol) {
     chosenSymbol = newSymbol;
@@ -31,6 +31,22 @@ class _NewAlarmState extends State<NewAlarm> {
     alarms.addAlarm(enteredTitle, enteredAmount);
 
     Navigator.of(context).pop();
+
+    /*  Scaffold.of(context).hideCurrentSnackBar();
+    Scaffold.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Added Alarm!',
+        ),
+        duration: Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'UNDO',
+          onPressed: () {
+            //alarms.removeSingleItem(product.id); //TODO
+          },
+        ),
+      ),
+    );*/
   }
 
   @override
@@ -53,7 +69,7 @@ class _NewAlarmState extends State<NewAlarm> {
                 flex: 2,
                 child: Container(
                   height: 60,
-                  child: SymbolPicker(callback),
+                  child: SymbolPicker(callback, chosenSymbol),
                 ),
               ),
               SizedBox(

@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 
 class SymbolPicker extends StatefulWidget {
   final Function(String) callback;
-  SymbolPicker(this.callback);
+  final initSymbol;
+  SymbolPicker(this.callback, this.initSymbol);
 
   @override
   _SymbolPickerState createState() => _SymbolPickerState();
 }
 
 class _SymbolPickerState extends State<SymbolPicker> {
-  var chosenSymbol =
-      'AAPL'; // <= for Dropdown Menu initialization value, has to be a valid value
+  var chosenSymbol;
+  @override
+  void initState() {
+    chosenSymbol = widget.initSymbol;
+    super.initState();
+  }
+  // <= for Dropdown Menu initialization value, has to be a valid value
+
   var symbols = <String>['AAPL', 'GOOGL', 'IBM'];
 
   @override
