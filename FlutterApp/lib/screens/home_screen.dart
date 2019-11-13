@@ -9,6 +9,7 @@ import 'package:trading_alarm/widgets/price_picker.dart';
 import 'package:trading_alarm/widgets/add_alarm_button.dart';
 import 'login_screen.dart';
 import '../widgets/new_alarm.dart';
+import 'log_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = "/home";
@@ -96,13 +97,18 @@ class _HomeScreenState extends State<HomeScreen> {
       title: Text('Stock Alarm'),
       actions: <Widget>[
         IconButton(
+            icon: Icon(Icons.list),
+            onPressed: () {
+              Navigator.pushNamed(context, LogScreen.routeName);
+            }),
+        IconButton(
             icon: Icon(Icons.exit_to_app),
             onPressed: () {
               FirebaseAuth.instance.signOut();
               alarms
                   .resetUser(); //try to solve this otherwise to not have the provider of alarms in this class, maybe with a provider for the user
               Navigator.pushNamed(context, LoginScreen.routeName);
-            })
+            }),
       ],
     );
 
@@ -116,11 +122,43 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Container(
         height: deviceHeight,
         width: double.infinity,
-        child: AlarmList(),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              height: deviceHeight * 0.07,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    "Price",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.arrow_upward),
+                  Spacer(),
+                  Text(
+                    "Creation",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.arrow_upward),
+                  Spacer(),
+                  Text(
+                    "Symbol",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Icon(Icons.arrow_upward),
+                ],
+              ),
+            ),
+            Container(height: deviceHeight * 0.93, child: AlarmList()),
+          ],
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
+        backgroundColor: Theme.of(context).accentColor,
         onPressed: () => _startAddNewAlarm(context),
       ),
     );

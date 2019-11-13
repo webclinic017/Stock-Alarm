@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/alarms.dart';
+import 'package:intl/intl.dart';
 
 class AlarmWidget extends StatefulWidget {
   final alarm;
@@ -23,7 +24,7 @@ class _AlarmWidgetState extends State<AlarmWidget> {
           alarms.removeAlarm(widget.alarm);
         });
 
-        SnackBar(
+        Scaffold.of(context).showSnackBar(SnackBar(
           content: Text("${widget.alarm.symbol}-Alarm deleted"),
           duration: Duration(seconds: 4),
           action: SnackBarAction(
@@ -33,16 +34,35 @@ class _AlarmWidgetState extends State<AlarmWidget> {
                   widget.alarm.symbol, widget.alarm.level); //TODO Snackback!
             },
           ),
-        );
+        ));
       },
       child: Card(
+        color: Colors.grey.withOpacity(0.1),
         elevation: 2,
         child: ListTile(
           trailing: Text(
             widget.alarm.symbol,
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
-          title: Text(widget.alarm.level.toString() + "\$"),
+          title: Center(
+            child: Column(
+              children: <Widget>[
+                Text(DateFormat()
+                    .add_Hm()
+                    .format(widget.alarm.creationDate)
+                    .toString()),
+                Text(
+                  DateFormat("dd.MM.yy")
+                      .format(widget.alarm.creationDate)
+                      .toString(),
+                ),
+              ],
+            ),
+          ),
+          leading: Text(widget.alarm.level.toString() + "\$"),
         ),
       ),
     );

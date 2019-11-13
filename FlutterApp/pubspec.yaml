@@ -66,6 +66,25 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   # fonts:
+  fonts:
+    - family: Socicon
+      fonts:
+        - asset: assets/icons/Socicon.ttf
+    - family: BalloonIcon
+      fonts:
+        - asset: assets/icons/BalloonIcon.ttf
+    - family: BalloonNew
+      fonts:
+        - asset: assets/icons/BalloonNew.ttf
+    - family: Verdana
+      fonts:
+        - asset: assets/fonts/VERDANAI.ttf
+    - family: Medium
+      fonts:
+        - asset: assets/fonts/ProductSansMedium.ttf
+    - family: YuGothic
+      fonts:
+        - asset: assets/fonts/yugothib.ttf
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf
