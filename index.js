@@ -1,8 +1,8 @@
-const express = require('express')
-const app = express()
+///const express = require('express')
+//const app = express()
 const port = 8080
 const socket = require('socket.io-client')('https://ws-api.iextrading.com/1.0/last')
-var admin = require('firebase-admin');
+var admin = require('./FirebaseFunctions/node_modules/firebase-admin');
 
 var symbols = []
 
@@ -13,8 +13,12 @@ admin.initializeApp({
     databaseURL: "https://stock-alarm-27fd9.firebaseio.com"
 });
 
-var registrationToken = 'eVuajnwLCwQ:APA91bGZhbXnGnsP5F5TwwB07AoLnpOGPPhSE02LvglYE5m1MJ_pFYQuunBvJD8xVKwpm_wm1-QuP0mm4N6JCSpUWHzWGmvIyGtU2tQZWgbd88kwjNn4j6dJ6goWs-6NdBLUif-1rhky';
+//var registrationToken = 'cXa_Yqmcp3I:APA91bFfTY6jsxbeZ-C9eClN4JOPQSsxPKxJn5iPPSR2A1HcJ-hXVjoB2TVnI0rsFvPUJS_rYMKtafYAKyn1cpZm3AhGk4TdeXqd01dATZgUuaoiwSWRg3-ixKKfN3QCv6H8eG9nUv0W';
 
+//dummy data
+//Alarms = [new Alarm('AAPL', 260.0, "John", "id1"), new Alarm('GOOGL', 150, "Sarah","id2")]
+symbols = 'AAPL'
+last_prices = { 'AAPL': 259, 'GOOGL': 210, 'IBM': 120 }
 
 class Alarm {
     constructor(symbol, level, owner, alarmId) {
@@ -26,71 +30,115 @@ class Alarm {
     toString() {
         return "  Symbol: " + this.symbol + ", Price of Alarm: " + this.level;
     }
+    toJSON() {
+        return {
+            "symbol": this.symbol,
+            "level": this.level,
+            "owner": this.owner,
+            "id": this.id,
+        }
+    }
 }
 
-//dummy data
-//Alarms = [new Alarm('AAPL', 260.0, "John", "id1"), new Alarm('GOOGL', 150, "Sarah","id2")]
-symbols = ['AAPL,GOOGL']
-last_prices = { 'AAPL': 259, 'GOOGL': 210 }
+
 
 function notifyUser(symbol, owner, alarmId_) {
-    var message = {
-        notification: { title: symbol },
-        data: {
-            alarmId: alarmId_,
-        },
-        token: registrationToken
-    };
-    admin.messaging().send(message)
-        .then((response) => {
-            // Response is a message ID string.
-            console.log('Successfully sent message:', response);
-        })
-        .catch((error) => {
-            console.log('Error sending message:', error);
-        });
-
+    var token
+    var db = admin.database();
+    var ref = db.ref("Users").child(owner).child("token").once("value", (snapshot) => {
+        token = snapshot.val()
+    }).then((_) => {
+        var message = {  //TODO look into firebase messaging options
+            notification: { title: symbol},
+            data: {
+                alarmId: alarmId_,
+            },
+            token: token
+        };
+        admin.messaging().send(message)
+            .then((response) => {
+                // Response is a message ID string.
+                console.log('Successfully sent message:', response);
+            })
+            .catch((error) => {
+                console.log('Error sending message:', error);
+            });
+    })
 }
 
-function checkAlarms(data) {
+var db = admin.database();
+
+
+function moveAlarm(alarm) { //TODO Debug
+    db.ref("Alarms").child(alarm.symbol).child(alarm.id).remove()
+    db.ref("Users").child(alarm.owner).child(alarm.id).remove()
+    db.ref("Users").child(alarm.owner).child("PastAlarms").child(alarm.id).set(
+        alarm.toJSON())
+}
+
+async function checkAlarms(data) {
+    noAlarms=false
     Alarms = []
     updateSymbol = data['symbol']
     price = data['price']
-    console.log("price start:     " + price)
-    console.log("last price start:   " + last_prices[updateSymbol])
-    var db = admin.database();
-    var ref = db.ref("Alarms").child(updateSymbol).once("value", (snapshot) => {
+    console.log("price start:     " + price + ", symbol: " + updateSymbol)
+    //console.log("last price start:   " + last_prices[updateSymbol])
 
+    await db.ref("Alarms").child(updateSymbol).once("value").then((snapshot) => {
+        console.log("snapshot val")
+        console.log(snapshot.val())
+        if (snapshot.val() == null) { throw Error('No Alarms'); }
         //here catch all promises and return them to outer promise (promise.all)
         snapshot.forEach(function(childSnapshot) {
             //console.log(childSnapshot.val())
             var alarm = childSnapshot.val()
             Alarms.push(new Alarm(alarm.symbol, alarm.level, alarm.owner, alarm.id))
         })
-    }).then((ds) => {
-        //console.log(Alarms)
-        for (i = 0; i < Alarms.length; i++) {
-            if (Alarms[i].level < last_prices[updateSymbol]) {
-                if (Alarms[i].level >= price) {
-                    console.log("ALARM")
-                    console.log("price:  " + price)
-                    console.log("last price:   " + last_prices[updateSymbol])
-                    console.log("Alarm level:    " + Alarms[i].level)
-                    //notifyUser(updateSymbol,Alarms[i].owner,Alarms[i].id)
-                    Alarms.splice(i, 1)
-                }
+    }).catch((reason) => {
+        console.log("No Alarms for symbol:" + updateSymbol)
+        noAlarms=true
+    })
+
+if(!noAlarms){
+    console.log(Alarms.length)
+
+    for (i = 0; i < Alarms.length;) {
+        console.log("past for schleife")
+        if (Alarms[i].level < last_prices[updateSymbol]) {
+            if (Alarms[i].level >= price) {
+                console.log("ALARM")
+                console.log(updateSymbol)
+                console.log("price:  " + price)
+                console.log("last price:   " + last_prices[updateSymbol])
+                console.log("Alarm level:    " + Alarms[i].level)
+                notifyUser(updateSymbol, Alarms[i].owner, Alarms[i].id)
+                moveAlarm(Alarms[i])
+                Alarms.splice(i, 1)
             }
             else {
-                if (Alarms[i].level <= data['price']) {
-                    console.log("ALARM")
-                    //notifyUser(updateSymbol,Alarms[i].owner,Alarms[i].id)
-                    Alarms.splice(i, 1)
-                }
+                i++
             }
-            
         }
-        last_prices[updateSymbol] = price
-    }).catch((reason) => console.log("failure"))
+        else {
+            if (Alarms[i].level <= data['price']) {
+                console.log("ALARM")
+                console.log(updateSymbol)
+                console.log("price:  " + price)
+                console.log("last price:   " + last_prices[updateSymbol])
+                console.log("Alarm level:    " + Alarms[i].level)
+                notifyUser(updateSymbol, Alarms[i].owner, Alarms[i].id)
+                moveAlarm(Alarms[i])
+                Alarms.splice(i, 1)
+            }
+            else {
+                i++
+            }
+        }
+
+    }
+}
+    last_prices[updateSymbol] = price
+
 }
 
 //todo: http get function for receiving alarm from the user
@@ -100,27 +148,12 @@ function addAlarm(symbol, level, direction, owner, alarmId) {
 }
 
 socket.on('message', message => {
-    price = JSON.parse(message);
-    checkAlarms(price);
+    decoded = JSON.parse(message);
+    checkAlarms(decoded);
 })
 
 socket.on('connect', () => {
-    socket.emit('subscribe', 'aapl')
+    socket.emit('subscribe', symbols = symbols)
 })
-
 
 socket.on('disconnect', () => console.log('Disconnected.'))
-
-app.get('/', (req, res) => {
-    res.write('<html>');
-    res.write('<body>');
-    //res.write(last_prices["AAPL"].toString());
-    //res.write('<h1>Test price of apple: </h1>' + price['price'] + ' $ </h1><br>');
-    res.write('<h1>List of Alarms: </h1>' + Alarms + ' $ <br>');
-    //res.write('<h1>List of Symbols </h1>' + symbols + ' </h1><br>');
-    res.write('</body>');
-    res.write('</html>');
-    res.end();
-})
-
-app.listen(port, () => console.log(`App listening on port ${port}!`))
