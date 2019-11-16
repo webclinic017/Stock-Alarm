@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:trading_alarm/providers/alarms.dart';
+import 'package:trading_alarm/providers/active_alarms.dart';
 import 'package:provider/provider.dart';
+import '../widgets/alarm_widget.dart';
 
 class AlarmList extends StatelessWidget {
   @override
@@ -8,16 +9,9 @@ class AlarmList extends StatelessWidget {
     var alarms = Provider.of<Alarms>(context);
 
     return ListView.builder(
-      itemCount: alarms.items.length,
-      itemBuilder: (ctx, index) {
-        return ListTile(
-          trailing: Text(
-            alarms.items[index].symbol,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          title: Text(alarms.items[index].level.toString() + "\$"),
-        );
-      },
-    );
+        itemCount: alarms.items.length,
+        itemBuilder: (ctx, index) {
+          return AlarmWidget(alarms.items[index]);
+        });
   }
 }
