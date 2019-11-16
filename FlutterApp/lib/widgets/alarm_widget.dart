@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/alarms.dart';
+import '../providers/active_alarms.dart';
 import 'package:intl/intl.dart';
 
 class AlarmWidget extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/alarms.dart';
+import '../providers/active_alarms.dart';
 import 'symbol_picker.dart';
 import 'price_picker.dart';
 

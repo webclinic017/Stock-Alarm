@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:trading_alarm/providers/alarms.dart';
+import 'package:trading_alarm/providers/active_alarms.dart';
 import 'package:provider/provider.dart';
 import '../widgets/alarm_widget.dart';
 

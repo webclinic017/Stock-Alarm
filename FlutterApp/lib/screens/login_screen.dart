@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:trading_alarm/providers/alarms.dart';
+import 'package:trading_alarm/providers/active_alarms.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../providers/past_alarms.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = "/login";
@@ -69,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final alarms = Provider.of<Alarms>(context, listen: false);
+    final pastAlarms = Provider.of<PastAlarms>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(title: Text("Login")),
@@ -81,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   checkToken();
                   alarms
                       .connectToFirebase(); // <- turn this into a future and put navigator .push in then teil
-
+                  pastAlarms.connectToFirebase();
                   Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((_) {
                   setState(() {

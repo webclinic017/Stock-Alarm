@@ -45,6 +45,11 @@ class Alarms with ChangeNotifier {
     return _items.firstWhere((alarm) => alarm.id == id);
   }
 
+  void removeLocalAlarmById(String alarmId) {
+    _items.removeWhere((element) => element.id == alarmId);
+    notifyListeners();
+  }
+
   void removeAlarm(Alarm alarm) {
     FirebaseDatabase.instance
         .reference()
