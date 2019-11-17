@@ -21,11 +21,12 @@ symbols = 'AAPL'
 last_prices = { 'AAPL': 259, 'GOOGL': 210, 'IBM': 120 }
 
 class Alarm {
-    constructor(symbol, level, owner, alarmId) {
+    constructor(symbol, level, owner, alarmId, creationDate) {
         this.symbol = symbol;
         this.level = level;
         this.owner = owner;  //needed for push notification
         this.id = alarmId;
+        this.creationDate=creationDate;
     }
     toString() {
         return "  Symbol: " + this.symbol + ", Price of Alarm: " + this.level;
@@ -36,6 +37,7 @@ class Alarm {
             "level": this.level,
             "owner": this.owner,
             "id": this.id,
+            "creationDate": this.creationDate,
         }
     }
 }
@@ -44,6 +46,7 @@ class Alarm {
 
 function notifyUser(symbol, owner, alarmId_) {
     var token
+
     var db = admin.database();
     var ref = db.ref("Users").child(owner).child("token").once("value", (snapshot) => {
         token = snapshot.val()
@@ -63,17 +66,21 @@ function notifyUser(symbol, owner, alarmId_) {
             .catch((error) => {
                 console.log('Error sending message:', error);
             });
-    })
+    }).catch((error)=> console.log("notify error"))
 }
 
 var db = admin.database();
-
-
 function moveAlarm(alarm) { //TODO Debug
-    db.ref("Alarms").child(alarm.symbol).child(alarm.id).remove()
-    db.ref("Users").child(alarm.owner).child(alarm.id).remove()
-    db.ref("Users").child(alarm.owner).child("PastAlarms").child(alarm.id).set(
+    promise1= db.ref("Alarms").child(alarm.symbol).child(alarm.id).remove()
+    promise2= db.ref("Users").child(alarm.owner).child("Alarms").child(alarm.id).remove()
+    promise3= db.ref("Users").child(alarm.owner).child("PastAlarms").child(alarm.id).set(
         alarm.toJSON())
+        promise4= db.ref("Users").child(alarm.owner).child("PastAlarms").child(alarm.id).update(
+        {"triggerDate":(new Date).getTime()})
+        Promise.all([promise1,promise2,promise3]).catch((error)=>{
+            console.log("set error")
+            console.log(error)
+        })
 }
 
 async function checkAlarms(data) {
@@ -87,13 +94,14 @@ async function checkAlarms(data) {
     await db.ref("Alarms").child(updateSymbol).once("value").then((snapshot) => {
         console.log("snapshot val")
         console.log(snapshot.val())
-        if (snapshot.val() == null) { throw Error('No Alarms'); }
+        if (snapshot.val() == null) { throw 'No Alarms'}
         //here catch all promises and return them to outer promise (promise.all)
         snapshot.forEach(function(childSnapshot) {
-            //console.log(childSnapshot.val())
+            console.log(childSnapshot.val().creationDate)
             var alarm = childSnapshot.val()
-            Alarms.push(new Alarm(alarm.symbol, alarm.level, alarm.owner, alarm.id))
+            Alarms.push(new Alarm(alarm.symbol, alarm.level, alarm.owner, alarm.id,alarm.creationDate))
         })
+        console.log(Alarms[0].creationDate)
     }).catch((reason) => {
         console.log("No Alarms for symbol:" + updateSymbol)
         noAlarms=true
@@ -103,6 +111,7 @@ if(!noAlarms){
     console.log(Alarms.length)
 
     for (i = 0; i < Alarms.length;) {
+        console.log(Alarms[i].creationDate)
         console.log("past for schleife")
         if (Alarms[i].level < last_prices[updateSymbol]) {
             if (Alarms[i].level >= price) {
@@ -121,6 +130,7 @@ if(!noAlarms){
         }
         else {
             if (Alarms[i].level <= data['price']) {
+               
                 console.log("ALARM")
                 console.log(updateSymbol)
                 console.log("price:  " + price)
@@ -143,8 +153,8 @@ if(!noAlarms){
 
 //todo: http get function for receiving alarm from the user
 
-function addAlarm(symbol, level, direction, owner, alarmId) {
-    Alarms.push(new Alarm(symbol, level, owner, alarmId))
+function addAlarm(symbol, level, direction, owner, alarmId, creationDate) {
+    Alarms.push(new Alarm(symbol, level, owner, alarmId, creationDate))
 }
 
 socket.on('message', message => {
