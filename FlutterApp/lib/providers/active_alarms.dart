@@ -12,11 +12,25 @@ class Alarms with ChangeNotifier {
     _items = [];
   }
 
-  void connectToFirebase() async {
+  List<Alarm> get items {
+    return [..._items];
+  }
+
+  Alarm findById(String id) {
+    return _items.firstWhere((alarm) => alarm.id == id);
+  }
+
+  void removeLocalAlarmById(String alarmId) {
+    _items.removeWhere((element) => element.id == alarmId);
+    notifyListeners();
+  }
+
+  void update() async {
+    //TODO see if i can pass the user provider to this class in constructor and then always use it
     _items = [];
     user = await FirebaseAuth.instance.currentUser();
 
-    FirebaseDatabase.instance
+    await FirebaseDatabase.instance
         .reference()
         .child("Users")
         .child(user.uid)
@@ -31,23 +45,6 @@ class Alarms with ChangeNotifier {
         notifyListeners();
       }
     });
-
-    // <- put this into then so that the ui is updating after loading finished
-    //or for the case of a lot of alarms: keep notify listeners in the loop so that the list of alarms build slowly
-    //=> requires that the list is in consumer and not whole ui updating
-  }
-
-  List<Alarm> get items {
-    return [..._items];
-  }
-
-  Alarm findById(String id) {
-    return _items.firstWhere((alarm) => alarm.id == id);
-  }
-
-  void removeLocalAlarmById(String alarmId) {
-    _items.removeWhere((element) => element.id == alarmId);
-    notifyListeners();
   }
 
   void removeAlarm(Alarm alarm) {

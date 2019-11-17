@@ -12,6 +12,8 @@ import '../widgets/new_alarm.dart';
 import 'log_screen.dart';
 import '../providers/past_alarms.dart';
 
+import 'package:flutter/services.dart';
+
 class HomeScreen extends StatefulWidget {
   static const routeName = "/home";
 
@@ -36,8 +38,25 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void handleAppLifecycleState() {
+    AppLifecycleState _lastLifecyleState;
+    // ignore: missing_return
+    SystemChannels.lifecycle.setMessageHandler((msg) {
+      print('SystemChannels> $msg');
+      switch (msg) {
+        case "AppLifecycleState.resumed":
+          _lastLifecyleState = AppLifecycleState.resumed;
+          print(_lastLifecyleState);
+          Provider.of<Alarms>(context).update();
+          break;
+        default:
+      }
+    });
+  }
+
   @override
   void initState() {
+    handleAppLifecycleState();
     FirebaseAuth.instance.currentUser().then((user) {
       userId = user.uid;
     });
@@ -117,6 +136,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _update(alarms) async {
+    await alarms.update();
+  }
+
   @override
   Widget build(BuildContext context) {
     final alarms = Provider.of<Alarms>(context);
@@ -147,40 +170,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: appBar,
-      body: Container(
-        height: deviceHeight,
-        width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              height: deviceHeight * 0.07,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(
-                    "Price",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.arrow_upward),
-                  Spacer(),
-                  Text(
-                    "Creation",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.arrow_upward),
-                  Spacer(),
-                  Text(
-                    "Symbol",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Icon(Icons.arrow_upward),
-                ],
+      body: RefreshIndicator(
+        onRefresh: () {
+          return _update(alarms);
+        },
+        child: Container(
+          height: deviceHeight,
+          width: double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                height: deviceHeight * 0.07,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      "Price",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Icon(Icons.arrow_upward),
+                    Spacer(),
+                    Text(
+                      "Creation",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Icon(Icons.arrow_upward),
+                    Spacer(),
+                    Text(
+                      "Symbol",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Icon(Icons.arrow_upward),
+                  ],
+                ),
               ),
-            ),
-            Container(height: deviceHeight * 0.93, child: AlarmList()),
-          ],
+              Container(height: deviceHeight * 0.93, child: AlarmList()),
+            ],
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

@@ -7,6 +7,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../providers/past_alarms.dart';
 
+import 'package:flutter/services.dart';
+
 class LoginScreen extends StatefulWidget {
   static const routeName = "/login";
 
@@ -37,6 +39,34 @@ class _LoginScreenState extends State<LoginScreen> {
         .then((snapshot) {
       if (snapshot.value != token) {
         ref.child("Users").child(user.uid).set({"token": token});
+      }
+    });
+  }
+
+  handleAppLifecycleState() {
+    AppLifecycleState _lastLifecyleState;
+    // ignore: missing_return
+    SystemChannels.lifecycle.setMessageHandler((msg) {
+      print('SystemChannels> $msg');
+      switch (msg) {
+        case "AppLifecycleState.paused":
+          _lastLifecyleState = AppLifecycleState.paused;
+          print(_lastLifecyleState);
+          break;
+        case "AppLifecycleState.inactive":
+          _lastLifecyleState = AppLifecycleState.inactive;
+          print(_lastLifecyleState);
+          break;
+        case "AppLifecycleState.resumed":
+          _lastLifecyleState = AppLifecycleState.resumed;
+          print(_lastLifecyleState);
+          Provider.of<Alarms>(context, listen: false).update();
+          break;
+        case "AppLifecycleState.suspending":
+          _lastLifecyleState = AppLifecycleState.suspending;
+          print(_lastLifecyleState);
+          break;
+        default:
       }
     });
   }
@@ -82,8 +112,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 login().then((_) {
                   checkToken();
                   alarms
-                      .connectToFirebase(); // <- turn this into a future and put navigator .push in then teil
+                      .update(); // <- turn this into a future and put navigator .push in then teil
                   pastAlarms.connectToFirebase();
+                  //handleAppLifecycleState();
                   Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((_) {
                   setState(() {
@@ -100,8 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 register().then((_) {
                   writeUserToDatabase();
-                  alarms
-                      .connectToFirebase(); //<- to get the user ready in alarms.dart
+                  alarms.update(); //<- to get the user ready in alarms.dart
 
                   Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((error) {
