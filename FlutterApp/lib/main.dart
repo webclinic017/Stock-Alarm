@@ -5,10 +5,17 @@ import 'screens/home_screen.dart';
 import 'providers/active_alarms.dart';
 import 'screens/log_screen.dart';
 import 'providers/past_alarms.dart';
+//import 'flutter_login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
+  Future login(loginData) async {
+    return FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: loginData["email"], password: loginData["password"]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(

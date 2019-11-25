@@ -6,7 +6,7 @@ import 'package:trading_alarm/providers/active_alarms.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../providers/past_alarms.dart';
-
+import 'package:flutter_login/flutter_login.dart';
 import 'package:flutter/services.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,9 +18,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   var token;
-  var email;
-  var password;
-  var _form = GlobalKey<FormState>();
 
   String loginText = "";
   FirebaseUser user;
@@ -28,9 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void checkToken() async {
     user = await FirebaseAuth.instance.currentUser();
-
     token = await FirebaseMessaging().getToken();
-
     await ref
         .child("Users")
         .child(user.uid)
@@ -43,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  handleAppLifecycleState() {
+  void handleAppLifecycleState() {
     AppLifecycleState _lastLifecyleState;
     // ignore: missing_return
     SystemChannels.lifecycle.setMessageHandler((msg) {
@@ -71,12 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<AuthResult> login() {
-    _form.currentState.save();
-    return FirebaseAuth.instance
-        .signInWithEmailAndPassword(email: email, password: password);
-  }
-
   void writeUserToDatabase() async {
     user = await FirebaseAuth.instance.currentUser();
     token = await FirebaseMessaging().getToken();
@@ -86,88 +75,55 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  Future<AuthResult> register() {
-    _form.currentState.save();
-    return FirebaseAuth.instance
-        .createUserWithEmailAndPassword(email: email, password: password);
+  Future<String> _authUser(LoginData data) async {
+    print('Name: ${data.name}, Password: ${data.password}');
+    await FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: data.name, password: data.password)
+        .then((val) {
+      checkToken();
+      Provider.of<Alarms>(context)
+          .update(); // <- turn this into a future and put navigator .push in then teil
+      Provider.of<PastAlarms>(context).connectToFirebase();
+      return null;
+    }).catchError((error) {
+      return "Username does not exist!";
+    });
   }
 
-  @override
-  void initState() {
-    super.initState();
+  Future<String> _registerUser(LoginData data) async {
+    print('Name: ${data.name}, Password: ${data.password}');
+    await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+            email: data.name, password: data.password)
+        .then((val) {
+      writeUserToDatabase();
+      Provider.of<Alarms>(context)
+          .update(); //<- to get the user ready in alarms.dart
+
+      return null;
+    }).catchError((error) {
+      return error.toString();
+    });
+  }
+
+  Future<String> _recoverPassword(String name) async {
+    print('Name: $name');
+    await Future.delayed(Duration(seconds: 1)).then((_) {
+      return null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final alarms = Provider.of<Alarms>(context, listen: false);
-    final pastAlarms = Provider.of<PastAlarms>(context, listen: false);
-
-    return Scaffold(
-      appBar: AppBar(title: Text("Login")),
-      body: Column(
-        children: <Widget>[
-          Center(
-            child: FlatButton(
-              onPressed: () {
-                login().then((_) {
-                  checkToken();
-                  alarms
-                      .update(); // <- turn this into a future and put navigator .push in then teil
-                  pastAlarms.connectToFirebase();
-                  //handleAppLifecycleState();
-                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
-                }).catchError((_) {
-                  setState(() {
-                    loginText = "User does not exist";
-                  });
-                });
-              },
-              child: Text("Login"),
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-          Center(
-            child: FlatButton(
-              onPressed: () {
-                register().then((_) {
-                  writeUserToDatabase();
-                  alarms.update(); //<- to get the user ready in alarms.dart
-
-                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
-                }).catchError((error) {
-                  setState(() {
-                    loginText = "Registering failed";
-                  });
-                });
-              },
-              child: Text("Register"),
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-          Text(loginText),
-          Form(
-            key: _form,
-            child: Column(
-              children: <Widget>[
-                TextFormField(
-                  decoration: InputDecoration(labelText: "email"),
-                  initialValue: "dud2@dud.de",
-                  onSaved: (value) {
-                    email = value;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Password"),
-                  initialValue: "duddud",
-                  onSaved: (value) {
-                    password = value;
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return FlutterLogin(
+      title: 'Stock Alarm',
+      //logo: 'assets/images/ecorp-lightblue.png',
+      onLogin: _authUser,
+      onSignup: _registerUser,
+      onSubmitAnimationCompleted: () {
+        Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      },
+      onRecoverPassword: _recoverPassword,
     );
   }
 }
