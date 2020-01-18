@@ -5,12 +5,26 @@ import 'screens/home_screen.dart';
 import 'providers/active_alarms.dart';
 import 'screens/log_screen.dart';
 import 'providers/past_alarms.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'providers/user.dart';
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  FirebaseAuth auth = FirebaseAuth.instance;
+
+  FirebaseUser fbUser;
+  User user =User();
+
   @override
   Widget build(BuildContext context) {
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -19,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           builder: (context) => PastAlarms(),
         ),
+        ChangeNotifierProvider.value(value: user)
       ],
       child: MaterialApp(
           title: 'Stock Alarm',

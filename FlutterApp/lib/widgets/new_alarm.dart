@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/active_alarms.dart';
 import 'symbol_picker.dart';
 import 'price_picker.dart';
-
+import '../providers/user.dart';
 class NewAlarm extends StatefulWidget {
   @override
   _NewAlarmState createState() => _NewAlarmState();
@@ -11,13 +11,13 @@ class NewAlarm extends StatefulWidget {
 
 class _NewAlarmState extends State<NewAlarm> {
   final amountController = TextEditingController();
-  var chosenSymbol = 'AAPL';
+  var chosenSymbol = 'AUDUSD';
 
   callback(newSymbol) {
     chosenSymbol = newSymbol;
   }
 
-  void _submitData() {
+  void _submitData() async{
     if (amountController.text.isEmpty) {
       return;
     }
@@ -28,7 +28,7 @@ class _NewAlarmState extends State<NewAlarm> {
       return;
     }
     var alarms = Provider.of<Alarms>(context, listen: false);
-    alarms.addAlarm(enteredTitle, enteredAmount);
+    await alarms.addAlarm(enteredTitle, enteredAmount, Provider.of<User>(context,listen: false));
 
     Navigator.of(context).pop();
 

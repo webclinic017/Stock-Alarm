@@ -11,7 +11,8 @@ import 'login_screen.dart';
 import '../widgets/new_alarm.dart';
 import 'log_screen.dart';
 import '../providers/past_alarms.dart';
-
+import '../providers/user.dart';
+import 'package:trading_alarm/main.dart';
 import 'package:flutter/services.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,8 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   var chosenSymbol;
   var init = true;
   final priceController = TextEditingController();
-  var userId; //evtl user oder userid als provider, im falle von user screen oder so
   final _firebaseMessaging = FirebaseMessaging();
+  User user;
 
   callback(newSymbol) {
     chosenSymbol = newSymbol;
@@ -47,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
         case "AppLifecycleState.resumed":
           _lastLifecyleState = AppLifecycleState.resumed;
           print(_lastLifecyleState);
-          Provider.of<Alarms>(context).update();
+          Provider.of<Alarms>(context).update(user);
           break;
         default:
       }
@@ -56,10 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
+    Future.delayed(Duration(microseconds: 0)).then((_){user=Provider.of<User>(context);});
     handleAppLifecycleState();
-    FirebaseAuth.instance.currentUser().then((user) {
-      userId = user.uid;
-    });
     super.initState();
   }
 
@@ -151,6 +150,13 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.list),
             onPressed: () {
               Navigator.pushNamed(context, LogScreen.routeName);
+            }),
+        IconButton(
+            icon: Icon(Icons.time_to_leave),
+            onPressed: () {
+              //TODO logout
+              FirebaseAuth.instance.signOut();
+              Navigator.pushReplacementNamed(context, LoginScreen.routeName);
             }),
         IconButton(
             icon: Icon(Icons.exit_to_app),

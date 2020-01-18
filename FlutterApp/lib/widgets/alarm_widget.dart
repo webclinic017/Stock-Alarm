@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/active_alarms.dart';
 import 'package:intl/intl.dart';
+import '../providers/user.dart';
 
 class AlarmWidget extends StatefulWidget {
   final alarm;
@@ -16,26 +17,7 @@ class _AlarmWidgetState extends State<AlarmWidget> {
   Widget build(BuildContext context) {
     var alarms = Provider.of<Alarms>(context); //maybe listen=False possible
 
-    return Dismissible(
-      key: Key(widget.alarm.id),
-      onDismissed: (direction) {
-        // Remove the item from the data source.
-        setState(() {
-          alarms.removeAlarm(widget.alarm);
-        });
-
-        Scaffold.of(context).showSnackBar(SnackBar(
-          content: Text("${widget.alarm.symbol}-Alarm deleted"),
-          duration: Duration(seconds: 4),
-          action: SnackBarAction(
-            label: 'UNDO',
-            onPressed: () {
-              alarms.addAlarm(
-                  widget.alarm.symbol, widget.alarm.level); //TODO Snackback!
-            },
-          ),
-        ));
-      },
+    return Consumer<User>(
       child: Card(
         color: Colors.grey.withOpacity(0.1),
         elevation: 2,
@@ -65,6 +47,27 @@ class _AlarmWidgetState extends State<AlarmWidget> {
           leading: Text(widget.alarm.level.toString() + "\$"),
         ),
       ),
+      builder: (ctx,user,child)=>Dismissible(
+        key: Key(widget.alarm.id),
+        onDismissed: (direction) {
+          // Remove the item from the data source.
+          setState(() {
+            alarms.removeAlarm(widget.alarm,user);
+          });
+
+          Scaffold.of(context).showSnackBar(SnackBar(
+            content: Text("${widget.alarm.symbol}-Alarm deleted"),
+            duration: Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'UNDO',
+              onPressed: () {
+                alarms.addAlarm(
+                    widget.alarm.symbol, widget.alarm.level,user); //TODO Snackback!
+              },
+            ),
+          ));
+        },child: child,),
+
     );
   }
 }

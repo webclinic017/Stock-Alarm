@@ -6,8 +6,10 @@ import 'package:trading_alarm/providers/active_alarms.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../providers/past_alarms.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart';
+import '../providers/user.dart';
+import 'package:async_loader/async_loader.dart';
 
 class LoginScreen extends StatefulWidget {
   static const routeName = "/login";
@@ -17,28 +19,46 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/contacts.readonly',
+    ],
+  );
+
   var token;
   var email;
   var password;
+  User user;
   var _form = GlobalKey<FormState>();
 
+  final GlobalKey<AsyncLoaderState> _asyncLoaderState =
+  new GlobalKey<AsyncLoaderState>();
+  FirebaseAuth auth = FirebaseAuth.instance;
+
   String loginText = "";
-  FirebaseUser user;
+  FirebaseUser fbUser;
   var ref = FirebaseDatabase.instance.reference();
 
-  void checkToken() async {
-    user = await FirebaseAuth.instance.currentUser();
+  Future<void> _handleSignIn() async {
+    try {
+      await _googleSignIn.signIn();
+    } catch (error) {
+      print(error);
+    }
+  }
 
+  void checkToken() async {
     token = await FirebaseMessaging().getToken();
 
     await ref
         .child("Users")
-        .child(user.uid)
+        .child(user.id)
         .child("token")
         .once()
         .then((snapshot) {
       if (snapshot.value != token) {
-        ref.child("Users").child(user.uid).set({"token": token});
+        ref.child("Users").child(user.id).set({"token": token});
       }
     });
   }
@@ -60,11 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
         case "AppLifecycleState.resumed":
           _lastLifecyleState = AppLifecycleState.resumed;
           print(_lastLifecyleState);
-          Provider.of<Alarms>(context, listen: false).update();
-          break;
-        case "AppLifecycleState.suspending":
-          _lastLifecyleState = AppLifecycleState.suspending;
-          print(_lastLifecyleState);
+          Provider.of<Alarms>(context, listen: false).update(user);
           break;
         default:
       }
@@ -78,9 +94,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void writeUserToDatabase() async {
-    user = await FirebaseAuth.instance.currentUser();
     token = await FirebaseMessaging().getToken();
-    await ref.child("Users").child(user.uid).set({
+    await ref.child("Users").child(user.id).set({
       "token": token,
       "email": user.email,
     });
@@ -92,30 +107,55 @@ class _LoginScreenState extends State<LoginScreen> {
         .createUserWithEmailAndPassword(email: email, password: password);
   }
 
+  Future checkUser(){
+    return getUser().then((fbUser2) async{
+      if (fbUser2 != null) {
+        await user.init();
+        initApp();
+        return true;
+      }
+      else {return false;}
+    });
+  }
+
+  Future initApp() async{
+    final alarms = Provider.of<Alarms>(context, listen: false);
+    final pastAlarms = Provider.of<PastAlarms>(context, listen: false);
+
+    await user.init();
+    checkToken();
+    alarms
+        .update(user); // <- turn this into a future and put navigator .push in then teil
+    pastAlarms.connectToFirebase(user);
+    //handleAppLifecycleState();
+  }
+
+
+  Future<FirebaseUser> getUser() async {
+    return await auth.currentUser();
+  }
+
   @override
   void initState() {
+    Future.delayed(Duration(microseconds: 0)).then((_){user=Provider.of<User>(context);});
+    checkUser();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     final alarms = Provider.of<Alarms>(context, listen: false);
-    final pastAlarms = Provider.of<PastAlarms>(context, listen: false);
-
-    return Scaffold(
+    user=Provider.of<User>(context);
+    var loginScreen=Scaffold(
       appBar: AppBar(title: Text("Login")),
       body: Column(
         children: <Widget>[
           Center(
             child: FlatButton(
               onPressed: () {
-                login().then((_) {
-                  checkToken();
-                  alarms
-                      .update(); // <- turn this into a future and put navigator .push in then teil
-                  pastAlarms.connectToFirebase();
-                  //handleAppLifecycleState();
-                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+                login().then((_) async {
+                   await initApp();
+                   Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((_) {
                   setState(() {
                     loginText = "User does not exist";
@@ -129,9 +169,22 @@ class _LoginScreenState extends State<LoginScreen> {
           Center(
             child: FlatButton(
               onPressed: () {
-                register().then((_) {
+                _handleSignIn().then((_){
+                  Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+                }).catchError((error)=> print(error));
+                //handleAppLifecycleState();
+              },
+              child: Text("Google Login"),
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+          Center(
+            child: FlatButton(
+              onPressed: () {
+                register().then((_) async{
+                  user.init();
                   writeUserToDatabase();
-                  alarms.update(); //<- to get the user ready in alarms.dart
+                  alarms.update(user); //<- to get the user ready in alarms.dart
 
                   Navigator.pushReplacementNamed(context, HomeScreen.routeName);
                 }).catchError((error) {
@@ -169,5 +222,18 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
+
+      var _asyncLoader = new AsyncLoader(
+        key: _asyncLoaderState,
+        initState: () async => await checkUser(),
+        renderLoad: () => Scaffold(body: Center(child: CircularProgressIndicator()),appBar: AppBar(),) ,
+        renderError: ([error]) =>
+        new Text('Sorry, there was an error loading your joke'),
+        renderSuccess: ({data}) => data ? HomeScreen():loginScreen,
+      );
+
+    return _asyncLoader;
+
+
   }
 }

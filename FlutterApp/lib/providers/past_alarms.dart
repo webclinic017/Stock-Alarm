@@ -2,24 +2,22 @@ import 'package:flutter/foundation.dart';
 import 'package:trading_alarm/models/alarm.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/user.dart';
 
 class PastAlarms with ChangeNotifier {
   List<Alarm> _items = [];
-  FirebaseUser user;
 
   void resetUser() {
-    user = null;
     _items = [];
   }
 
-  void connectToFirebase() async {
+  void connectToFirebase(User user) async {
     _items = [];
-    user = await FirebaseAuth.instance.currentUser();
 
     FirebaseDatabase.instance
         .reference()
         .child("Users")
-        .child(user.uid)
+        .child(user.id)
         .child("PastAlarms")
         .once()
         .then((snap) {
@@ -51,11 +49,11 @@ class PastAlarms with ChangeNotifier {
     notifyListeners();
   }
 
-  void removeAlarm(Alarm alarm) {
+  void removeAlarm(Alarm alarm,User user) {
     FirebaseDatabase.instance
         .reference()
         .child('Users')
-        .child(user.uid)
+        .child(user.id)
         .child("PastAlarms")
         .child(alarm.id)
         .remove();

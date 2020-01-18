@@ -16,9 +16,10 @@ class _SymbolPickerState extends State<SymbolPicker> {
     chosenSymbol = widget.initSymbol;
     super.initState();
   }
-  // <= for Dropdown Menu initialization value, has to be a valid value
 
-  var symbols = <String>['AAPL', 'GOOGL', 'IBM'];
+
+  var symbols = ["AUDUSD","AUDCAD","AUDJPY","AUDCHF","AUDNZD","CADCHF","CADJPY","CHFJPY","EURAUD","EURCAD","EURCHF","EURGBP","EURJPY","EURNZD","EURUSD","GBPAUD","GBPCAD","GBPCHF","GBPJPY","GBPNZD","GBPUSD","NZDCAD","NZDCHF","NZDJPY","NZDUSD","USDCAD","USDCHF","USDJPY"];
+
 
   @override
   Widget build(BuildContext context) {

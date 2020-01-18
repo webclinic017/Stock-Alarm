@@ -2,13 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:trading_alarm/models/alarm.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'user.dart';
 
 class Alarms with ChangeNotifier {
   List<Alarm> _items = [];
-  FirebaseUser user;
+
 
   void resetUser() {
-    user = null;
     _items = [];
   }
 
@@ -25,15 +26,14 @@ class Alarms with ChangeNotifier {
     notifyListeners();
   }
 
-  void update() async {
+  void update(User user) async {
     //TODO see if i can pass the user provider to this class in constructor and then always use it
     _items = [];
-    user = await FirebaseAuth.instance.currentUser();
 
     await FirebaseDatabase.instance
         .reference()
         .child("Users")
-        .child(user.uid)
+        .child(user.id)
         .child("Alarms")
         .once()
         .then((snap) {
@@ -47,7 +47,7 @@ class Alarms with ChangeNotifier {
     });
   }
 
-  void removeAlarm(Alarm alarm) {
+  void removeAlarm(Alarm alarm,User user) {
     FirebaseDatabase.instance
         .reference()
         .child('Alarms')
@@ -57,7 +57,7 @@ class Alarms with ChangeNotifier {
     FirebaseDatabase.instance
         .reference()
         .child('Users')
-        .child(user.uid)
+        .child(user.id)
         .child("Alarms")
         .child(alarm.id)
         .remove();
@@ -66,7 +66,7 @@ class Alarms with ChangeNotifier {
     notifyListeners();
   }
 
-  void addAlarm(symbol, level) async {
+  Future addAlarm(symbol, level, User user) async {
     var alarm = Alarm(symbol, level);
 
     var ref = FirebaseDatabase.instance
@@ -75,7 +75,7 @@ class Alarms with ChangeNotifier {
         .child(alarm.symbol)
         .push();
 
-    await ref.set({"owner": user.uid});
+    await ref.set({"owner": user.id});
 
     var id = ref.key;
     alarm.setId(id);
@@ -84,7 +84,7 @@ class Alarms with ChangeNotifier {
     var future2 = FirebaseDatabase.instance
         .reference()
         .child("Users")
-        .child(user.uid)
+        .child(user.id)
         .child("Alarms")
         .child(alarm.id)
         .set(alarm.toJson());
